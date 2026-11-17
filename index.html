@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battery Life</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #1a1a1a;
+  --ink: #ffffff;
+  --muted: #888888;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --green: #00a86b;
+  --green-bg: #d6f5e8;
+  --red: #e8222e;
+  --red-bg: #fde8e9;
+  --yellow: #e8a800;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 80px;
+  gap: 32px;
+}
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.4rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-align: center;
+}
+.subtitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ── BATTERY ── */
+.battery-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.nub {
+  width: 48px; height: 10px;
+  border-radius: 3px 3px 0 0;
+  border: 3px solid #fff;
+  border-bottom: none;
+  background: transparent;
+}
+.battery-shell {
+  width: 160px; height: 340px;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  position: relative; overflow: hidden;
+  background: #2e2a24;
+}
+.segs-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0;
+}
+.seg-row {
+  flex: 1;
+  background: #fff;
+  border-bottom: 1px solid #fff;
+}
+.pct-display {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; z-index: 2;
+  pointer-events: none;
+}
+.pct-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.8rem; line-height: 1; color: #111;
+}
+.pct-unit { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.1em; }
+
+/* ── MODE SELECTOR ── */
+.mode-card {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.toggle-group {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 18px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.mode-btn:hover { border-color: var(--ink); }
+.mode-btn .mode-icon { font-size: 2rem; line-height: 1; }
+.mode-btn .mode-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; letter-spacing: 0.06em;
+}
+.mode-btn .mode-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.mode-btn.active-charge {
+  border-color: var(--green);
+  background: var(--green-bg);
+  box-shadow: 0 0 0 3px rgba(0,168,107,0.25), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.mode-btn.active-charge .mode-label { color: var(--green); }
+.mode-btn.active-charge .mode-icon { filter: drop-shadow(0 0 6px rgba(0,168,107,0.5)); }
+
+.mode-btn.active-drain {
+  border-color: var(--red);
+  background: var(--red-bg);
+  box-shadow: 0 0 0 3px rgba(232,34,46,0.2), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.mode-btn.active-drain .mode-label { color: var(--red); }
+.mode-btn.active-drain .mode-icon { filter: drop-shadow(0 0 6px rgba(232,34,46,0.4)); }
+
+/* ── RATE SLIDER ── */
+.rate-section { width: 100%; }
+.rate-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 10px;
+}
+.rate-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.rate-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem; letter-spacing: 0.04em; color: var(--ink);
+}
+.rate-value span { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+
+input[type=range] {
+  width: 100%; height: 6px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--border); border-radius: 3px; outline: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 3px solid var(--card);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+/* ── STATUS ── */
+.status-row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  transition: all 0.4s;
+}
+.status-row.charging { border-color: var(--green); background: var(--green-bg); box-shadow: 0 0 0 2px rgba(0,168,107,0.15); }
+.status-row.draining { border-color: var(--red); background: var(--red-bg); box-shadow: 0 0 0 2px rgba(232,34,46,0.12); }
+
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+  transition: background 0.3s;
+}
+.status-row.charging .status-dot { background: var(--green); animation: pulse-green 1.4s ease infinite; }
+.status-row.draining .status-dot { background: var(--red); animation: pulse-red 1.4s ease infinite; }
+
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,168,107,0.7); }
+  50% { box-shadow: 0 0 0 6px rgba(0,168,107,0); }
+}
+@keyframes pulse-red {
+  0%,100% { box-shadow: 0 0 0 0 rgba(232,34,46,0.7); }
+  50% { box-shadow: 0 0 0 6px rgba(232,34,46,0); }
+}
+
+.status-text { flex: 1; }
+.status-main {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem; color: var(--ink);
+  letter-spacing: 0.04em;
+}
+.status-row.charging .status-main { color: var(--green); }
+.status-row.draining .status-main { color: var(--red); }
+.status-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem; color: var(--muted);
+  margin-top: 1px;
+}
+.status-eta {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem; letter-spacing: 0.04em; color: var(--muted);
+}
+.status-row.charging .status-eta { color: var(--green); }
+.status-row.draining .status-eta { color: var(--red); }
+
+/* ── SESSION TIMER ── */
+.session-row {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%;
+}
+.session-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.session-time {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem; letter-spacing: 0.06em; color: var(--muted);
+}
+
+/* ── LOG ── */
+.log-card {
+  width: 100%; max-width: 420px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+}
+.log-header {
+  padding: 14px 20px;
+  border-bottom: 1.5px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem; color: var(--muted);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.log-clear {
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  transition: color 0.2s;
+}
+.log-clear:hover { color: var(--ink); }
+.log-body { max-height: 220px; overflow-y: auto; }
+.log-body::-webkit-scrollbar { width: 3px; }
+.log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.log-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  animation: slideIn 0.25s ease;
+}
+@keyframes slideIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
+.log-item:last-child { border-bottom: none; }
+.log-bar { width: 3px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+.log-bar.charge { background: var(--green); }
+.log-bar.drain { background: var(--red); }
+.log-info { flex: 1; }
+.log-title-text { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; }
+.log-meta { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
+.log-delta {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: 0.04em;
+}
+.log-delta.charge { color: var(--green); }
+.log-delta.drain { color: var(--red); }
+.log-empty {
+  padding: 24px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem; color: var(--muted);
+  text-align: center; letter-spacing: 0.06em;
+}
+
+.reset-btn {
+  background: none; border: 1.5px solid var(--border); border-radius: 6px;
+  font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted);
+  padding: 6px 14px; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase;
+  transition: all 0.2s;
+}
+.reset-btn:hover { border-color: var(--ink); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>Battery Life</h1>
+  <p class="subtitle">Toggle to charge or drain</p>
+</div>
+
+<!-- BATTERY -->
+<div class="battery-wrap">
+  <div class="nub"></div>
+  <div class="battery-shell">
+    <div class="segs-grid" id="segsGrid"></div>
+    <div class="pct-display">
+      <div class="pct-big" id="pctBig">50.0</div>
+      <div class="pct-unit">% energy</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="mode-card">
+
+  <!-- MODE BUTTONS -->
+  <div class="toggle-group">
+    <button class="mode-btn" id="btnIdle" onclick="setMode('idle')">
+      <span class="mode-icon">⏸</span>
+      <span class="mode-label">Idle</span>
+      <span class="mode-sub">No change</span>
+    </button>
+    <button class="mode-btn" id="btnCharge" onclick="setMode('charge')">
+      <span class="mode-icon">⚡</span>
+      <span class="mode-label">Charge</span>
+      <span class="mode-sub">Fill up</span>
+    </button>
+    <button class="mode-btn" id="btnDrain" onclick="setMode('drain')">
+      <span class="mode-icon">🔋</span>
+      <span class="mode-label">Drain</span>
+      <span class="mode-sub">Use up</span>
+    </button>
+  </div>
+
+  <!-- RATE SLIDER -->
+  <div class="rate-section">
+    <div class="rate-header">
+      <span class="rate-title">Speed</span>
+      <div class="rate-value"><span id="rateVal">8.4</span><span> % / hr</span></div>
+    </div>
+    <input type="range" id="rateSlider" min="0.05" max="2" step="0.01" value="0.14" oninput="onRateChange(this.value)">
+    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+      <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:var(--muted);">Slow drain</span>
+      <span style="font-family:'DM Mono',monospace;font-size:0.55rem;color:var(--muted);">Fast charge</span>
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--border);">
+      <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--muted);letter-spacing:0.06em;margin-bottom:7px;">OPPO A80 5G presets</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="applyPreset(0.83)" style="flex:1;padding:7px 6px;border-radius:6px;border:1.5px solid var(--green);background:var(--green-bg);font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--green);cursor:pointer;letter-spacing:0.04em;">⚡ 45W Charge<br><span style="font-size:0.7rem;font-family:'Bebas Neue',sans-serif;letter-spacing:0.04em;">50% / hr · ~2h</span></button>
+        <button onclick="applyPreset(0.14)" style="flex:1;padding:7px 6px;border-radius:6px;border:1.5px solid var(--red);background:var(--red-bg);font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--red);cursor:pointer;letter-spacing:0.04em;">🔋 Typical Drain<br><span style="font-size:0.7rem;font-family:'Bebas Neue',sans-serif;letter-spacing:0.04em;">8% / hr · ~12h</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-row idle" id="statusRow">
+    <div class="status-dot"></div>
+    <div class="status-text">
+      <div class="status-main" id="statusMain">Idle — no change</div>
+      <div class="status-sub" id="statusSub">Toggle charge or drain to begin</div>
+    </div>
+    <div class="status-eta" id="statusEta"></div>
+  </div>
+
+  <!-- SESSION TIMER -->
+  <div class="session-row">
+    <span class="session-label">Session time</span>
+    <span class="session-time" id="sessionTime">0:00</span>
+  </div>
+
+  <button class="reset-btn" onclick="resetAll()">↺ Reset to 50%</button>
+</div>
+
+<!-- LOG -->
+<div class="log-card">
+  <div class="log-header">
+    <span>Activity log</span>
+    <button class="log-clear" onclick="clearLog()">Clear</button>
+  </div>
+  <div class="log-body" id="logBody">
+    <div class="log-empty">No activity yet</div>
+  </div>
+</div>
+
+<script>
+let energy = 50;        // 0–100
+let mode = 'idle';      // 'idle' | 'charge' | 'drain'
+let ratePerMin = 0.14;  // % per minute — default: Oppo A80 typical drain
+let sessionStart = null;
+let sessionSeconds = 0;
+let sessionStartEnergy = 50;
+const logItems = [];
+
+// Build 100 div segments (one per 1%)
+const TOTAL_SEGS = 50;
+const segEls = [];
+(function() {
+  const grid = document.getElementById('segsGrid');
+  for (let i = 0; i < TOTAL_SEGS; i++) {
+    const d = document.createElement('div');
+    d.className = 'seg-row';
+    grid.appendChild(d);
+    segEls.push(d);
+  }
+})();
+
+function drawSegments(pct) {
+  const litCount = Math.round(pct / 2);
+  const activeColor = fillColor(Math.max(1, pct));
+  for (let i = 0; i < TOTAL_SEGS; i++) {
+    if (i < litCount) {
+      segEls[i].style.background = activeColor;
+      segEls[i].style.borderBottom = '1px solid rgba(0,0,0,0.25)';
+    } else {
+      segEls[i].style.background = '#2e2a24';
+      segEls[i].style.borderBottom = '1px solid #1a1714';
+    }
+  }
+}
+
+// Color map from the hue-wheel formula — #FFRRGGBB → [r,g,b]
+// Levels 1–100, with the blue range brightened to avoid dark indigo
+const COLOR_MAP = [
+  null, // index 0 unused
+  [255,0,0],[255,15,0],[255,30,0],[255,45,0],[255,60,0],
+  [255,75,0],[255,90,0],[255,105,0],[255,120,0],[255,135,0],
+  [255,150,0],[255,165,0],[255,180,0],[255,195,0],[255,210,0],
+  [255,225,0],[255,240,0],[255,255,0],[240,255,0],[225,255,0],
+  [210,255,0],[195,255,0],[180,255,0],[165,255,0],[150,255,0],
+  [135,255,0],[120,255,0],[105,255,0],[90,255,0],[75,255,0],
+  [60,255,0],[45,255,0],[30,255,0],[15,255,0],[0,255,0],
+  [0,255,16],[0,255,32],[0,255,48],[0,255,64],[0,255,80],
+  [0,255,96],[0,255,112],[0,255,128],[0,255,144],[0,255,160],
+  [0,255,176],[0,255,192],[0,255,208],[0,255,224],[0,255,240],
+  [0,255,255],[0,240,255],[0,225,255],[0,210,255],[0,195,255],
+  [0,180,255],[0,165,255],[0,150,255],[0,135,255],[0,120,255],
+  // levels 60–68: original goes dark blue — brighten by boosting R+G
+  [60,120,255],[80,110,255],[100,100,255],[120,90,255],[140,80,255],
+  [160,70,255],[175,55,255],[185,40,255],[190,20,255],
+  // 69–84: purple range
+  [200,16,255],[208,32,255],[216,48,255],[220,64,255],[208,80,255],
+  [196,96,255],[184,112,255],[172,128,255],[160,144,255],[148,160,255],
+  [136,176,255],[124,192,255],[112,208,255],[100,224,255],[88,240,255],
+  // 84–100: back to red via magenta
+  [255,0,255],[255,0,240],[255,0,225],[255,0,210],[255,0,195],
+  [255,0,180],[255,0,165],[255,0,150],[255,0,135],[255,0,120],
+  [255,0,105],[255,0,90],[255,0,75],[255,0,60],[255,0,45],
+  [255,0,30],[255,0,0]
+];
+
+function fillColor(pct) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  // map 0–100 to index 1–100
+  const pos = (clamped / 100) * 99 + 1; // 1.0 to 100.0
+  const lo = Math.floor(pos);
+  const hi = Math.min(100, lo + 1);
+  const t = pos - lo;
+
+  const c0 = COLOR_MAP[lo] || COLOR_MAP[1];
+  const c1 = COLOR_MAP[hi] || COLOR_MAP[100];
+
+  const r = Math.round(c0[0] + (c1[0] - c0[0]) * t);
+  const g = Math.round(c0[1] + (c1[1] - c0[1]) * t);
+  const b = Math.round(c0[2] + (c1[2] - c0[2]) * t);
+
+  return `rgb(${r},${g},${b})`;
+}
+
+function setMode(m) {
+  // if switching away from an active mode, log it
+  if (mode !== 'idle' && sessionStart !== null) {
+    commitLog();
+  }
+
+  mode = m;
+  sessionStart = m !== 'idle' ? Date.now() : null;
+  sessionSeconds = 0;
+  sessionStartEnergy = energy;
+
+  // update button styles
+  document.getElementById('btnIdle').className = 'mode-btn' + (m === 'idle' ? ' active-idle' : '');
+  document.getElementById('btnCharge').className = 'mode-btn' + (m === 'charge' ? ' active-charge' : '');
+  document.getElementById('btnDrain').className = 'mode-btn' + (m === 'drain' ? ' active-drain' : '');
+
+  updateSliderTrack();
+  updateStatus();
+}
+
+function applyPreset(rate) {
+  ratePerMin = rate;
+  const slider = document.getElementById('rateSlider');
+  slider.value = rate;
+  document.getElementById('rateVal').textContent = (rate * 60).toFixed(1);
+  updateSliderTrack();
+  updateStatus();
+}
+
+function updateSliderTrack() {
+  const slider = document.getElementById('rateSlider');
+  const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+  const color = mode === 'charge' ? 'var(--green)' : mode === 'drain' ? 'var(--red)' : 'var(--muted)';
+  slider.style.background = `linear-gradient(to right, ${color} ${pct}%, var(--border) ${pct}%)`;
+}
+
+function onRateChange(v) {
+  ratePerMin = parseFloat(v);
+  document.getElementById('rateVal').textContent = (ratePerMin * 60).toFixed(1);
+  updateSliderTrack();
+  updateStatus();
+}
+
+function commitLog() {
+  const delta = energy - sessionStartEnergy;
+  const secs = Math.round((Date.now() - sessionStart) / 1000);
+  const mm = Math.floor(secs / 60), ss = secs % 60;
+  logItems.unshift({
+    type: mode,
+    delta: delta,
+    duration: `${mm}:${String(ss).padStart(2,'0')}`,
+    from: Math.round(sessionStartEnergy * 10) / 10,
+    to: Math.round(energy * 10) / 10,
+    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+  });
+  renderLog();
+}
+
+function renderLog() {
+  const body = document.getElementById('logBody');
+  if (logItems.length === 0) {
+    body.innerHTML = '<div class="log-empty">No activity yet</div>';
+    return;
+  }
+  body.innerHTML = logItems.slice(0, 30).map(item => {
+    const sign = item.delta >= 0 ? '+' : '';
+    const label = item.type === 'charge' ? 'Charged' : 'Drained';
+    return `
+    <div class="log-item">
+      <div class="log-bar ${item.type}"></div>
+      <div class="log-info">
+        <div class="log-title-text">${label} for ${item.duration}</div>
+        <div class="log-meta">${item.from}% → ${item.to}% · ${item.time}</div>
+      </div>
+      <div class="log-delta ${item.type}">${sign}${Math.round(item.delta * 10) / 10}%</div>
+    </div>`;
+  }).join('');
+}
+
+function clearLog() {
+  logItems.length = 0;
+  renderLog();
+}
+
+function fmtETA(pct, ratePerMin) {
+  if (ratePerMin < 0.001) return '∞';
+  const mins = Math.round(pct / ratePerMin);
+  if (mins >= 60) return `${Math.floor(mins/60)}h ${mins%60}m`;
+  return `${mins}m`;
+}
+
+function updateStatus() {
+  const row = document.getElementById('statusRow');
+  const main = document.getElementById('statusMain');
+  const sub = document.getElementById('statusSub');
+  const eta = document.getElementById('statusEta');
+
+  row.className = 'status-row ' + mode;
+
+  if (mode === 'idle') {
+    main.textContent = 'Idle — no change';
+    sub.textContent = 'Toggle charge or drain to begin';
+    eta.textContent = '';
+  } else if (mode === 'charge') {
+    main.textContent = `Charging at ${(ratePerMin * 60).toFixed(1)}% / hr`;
+    if (energy >= 100) { sub.textContent = 'Battery full!'; eta.textContent = ''; }
+    else { sub.textContent = 'Time to full'; eta.textContent = fmtETA(100 - energy, ratePerMin); }
+  } else {
+    main.textContent = `Draining at ${(ratePerMin * 60).toFixed(1)}% / hr`;
+    if (energy <= 0) { sub.textContent = 'Battery empty!'; eta.textContent = ''; }
+    else { sub.textContent = 'Time to empty'; eta.textContent = fmtETA(energy, ratePerMin); }
+  }
+}
+
+function fmtSession(secs) {
+  const m = Math.floor(secs / 60), s = secs % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+let lastTick = Date.now();
+function tick() {
+  const now = Date.now();
+  const dtSec = (now - lastTick) / 1000;
+  lastTick = now;
+
+  if (mode !== 'idle') {
+    const ratePerSec = ratePerMin / 60;
+    if (mode === 'charge') {
+      energy = Math.min(100, energy + ratePerSec * dtSec);
+      if (energy >= 100) setMode('idle');
+    } else {
+      energy = Math.max(0, energy - ratePerSec * dtSec);
+      if (energy <= 0) setMode('idle');
+    }
+    sessionSeconds += dtSec;
+  }
+
+  // battery render
+  const pct = Math.max(0, Math.min(100, energy));
+  drawSegments(pct);
+  document.getElementById('pctBig').textContent = pct.toFixed(1);
+  document.getElementById('pctBig').textContent = pct.toFixed(1);
+  // tint the status dot to match
+  const dot = document.querySelector('.status-dot');
+  if (dot && mode !== 'idle') dot.style.background = fillColor(pct);
+
+  // session timer
+  document.getElementById('sessionTime').textContent = mode !== 'idle' ? fmtSession(Math.floor(sessionSeconds)) : '0:00';
+
+  updateStatus();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('bl_energy', energy);
+    localStorage.setItem('bl_rate', ratePerMin);
+    localStorage.setItem('bl_log', JSON.stringify(logItems.slice(0, 30)));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const e = localStorage.getItem('bl_energy');
+    const r = localStorage.getItem('bl_rate');
+    const l = localStorage.getItem('bl_log');
+    if (e !== null) energy = parseFloat(e);
+    if (r !== null) {
+      ratePerMin = parseFloat(r);
+      document.getElementById('rateSlider').value = ratePerMin;
+      document.getElementById('rateVal').textContent = (ratePerMin * 60).toFixed(1);
+    }
+    if (l !== null) {
+      const parsed = JSON.parse(l);
+      logItems.push(...parsed);
+      renderLog();
+    }
+  } catch(e) {}
+}
+
+function resetAll() {
+  if (mode !== 'idle') setMode('idle');
+  energy = 50;
+  logItems.length = 0;
+  renderLog();
+  saveState();
+}
+
+loadState();
+setInterval(tick, 200);
+setInterval(saveState, 10000);
+updateSliderTrack();
+tick();
+</script>
+</body>
+</html>
